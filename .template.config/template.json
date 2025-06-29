@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "Sinan Fen",
+  "classifications": ["WebAPI", "CleanArchitecture", "CQRS", "Authentication", "JWT", "2FA"],
+  "identity": "Sinan.AspNetCore.CleanArchitecture.CQRS.Template",
+  "name": "ASP.NET Core 9 Clean Architecture CQRS Template",
+  "description": "A production-ready ASP.NET Core 9 template with Clean Architecture, CQRS, JWT authentication, 2FA, email confirmation, and PostgreSQL support.",
+  "shortName": "clean-cqrs-template",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "Template",
+  "preferNameDirectory": true,
+  "sources": [
+    {
+      "modifiers": [
+        {
+          "exclude": [
+            "**/bin/**",
+            "**/obj/**",
+            "**/.vs/**",
+            "**/Logs/**",
+            "**/migration.sql",
+            "**/.git/**"
+          ]
+        }
+      ]
+    }
+  ],
+  "postActions": [
+    {
+      "condition": "(OS == \"Windows_NT\")",
+      "description": "Restore NuGet packages",
+      "manualInstructions": [
+        {
+          "text": "Run 'dotnet restore'"
+        }
+      ],
+      "actionId": "210D431B-A78B-4D2F-B762-4ED3E3EA9025",
+      "args": {
+        "executable": "dotnet.exe",
+        "args": "restore"
+      },
+      "continueOnError": true
+    },
+    {
+      "condition": "(OS != \"Windows_NT\")",
+      "description": "Restore NuGet packages", 
+      "manualInstructions": [
+        {
+          "text": "Run 'dotnet restore'"
+        }
+      ],
+      "actionId": "210D431B-A78B-4D2F-B762-4ED3E3EA9025",
+      "args": {
+        "executable": "dotnet",
+        "args": "restore"
+      },
+      "continueOnError": true
+    }
+  ]
+} 
