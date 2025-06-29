@@ -1,0 +1,1 @@
+# aspnetcore-clean-cqrs-template
