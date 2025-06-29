@@ -1,0 +1,135 @@
+# =================================================================
+# Docker Compose for ASP.NET Core Clean Architecture CQRS Template
+# Production-ready configuration with PostgreSQL
+# =================================================================
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: template-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: TemplateDB
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    networks:
+      - template-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d TemplateDB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # PostgreSQL for Logging (separate database)
+  postgres-logs:
+    image: postgres:16-alpine
+    container_name: template-postgres-logs
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: TemplateLogsDB
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_logs_data:/var/lib/postgresql/data
+    networks:
+      - template-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d TemplateLogsDB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ASP.NET Core API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: template-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      postgres-logs:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=TemplateDB;Username=postgres;Password=postgres;Port=5432;Include Error Detail=true
+      - Logging__PostgreSql__ConnectionString=Host=postgres-logs;Database=TemplateLogsDB;Username=postgres;Password=postgres;Port=5432;Include Error Detail=true
+      - Jwt__SecretKey=MyVerySecureProductionSecretKeyForJwtTokenGeneration2024!
+      - Jwt__Issuer=TemplateAPI
+      - Jwt__Audience=TemplateClient
+      - Jwt__AccessTokenExpirationMinutes=60
+      - Jwt__RefreshTokenExpirationDays=7
+      - Jwt__AllowInsecureHttp=false
+      - DefaultAdmin__Email=admin@template.com
+      - DefaultAdmin__Password=AdminProduction2024!
+      - DefaultAdmin__FirstName=System
+      - DefaultAdmin__LastName=Administrator
+    ports:
+      - "8080:8080"
+    volumes:
+      - api_logs:/app/Logs
+    networks:
+      - template-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # pgAdmin (optional - for database management)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: template-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@template.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - template-network
+    depends_on:
+      - postgres
+      - postgres-logs
+    profiles:
+      - tools  # Bu servis sadece 'tools' profile ile çalışır
+
+# Named volumes for data persistence
+volumes:
+  postgres_data:
+    driver: local
+  postgres_logs_data:
+    driver: local
+  api_logs:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+# Custom network
+networks:
+  template-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16 
