@@ -12,6 +12,14 @@
   },
   "sourceName": "Template",
   "preferNameDirectory": true,
+  "symbols": {
+    "solutionName": {
+      "type": "parameter",
+      "datatype": "text",
+      "replaces": "Template",
+      "defaultValue": "Template"
+    }
+  },
   "sources": [
     {
       "modifiers": [
